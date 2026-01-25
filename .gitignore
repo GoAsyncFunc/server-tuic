@@ -1,0 +1,20 @@
+# Binaries
+# Binaries
+/server
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Logs
+*.log
+
+# Editor/IDE
+.idea
+.vscode
+.DS_Store
+*.swp
+
+# Certificates (Local Development)
+server.crt
+server.key
