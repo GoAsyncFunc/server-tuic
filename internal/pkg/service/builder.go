@@ -13,6 +13,7 @@ import (
 
 	api "github.com/GoAsyncFunc/uniproxy/pkg"
 	"github.com/sagernet/sing-quic/tuic"
+	"github.com/sagernet/sing/common/auth"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
 	aTLS "github.com/sagernet/sing/common/tls"
@@ -40,6 +41,9 @@ type Builder struct {
 	apiClient *api.Client
 
 	service *tuic.Service[int]
+
+	// Traffic Stats
+	trafficStats *TrafficStats
 
 	// Users
 	userList []api.UserInfo
@@ -90,11 +94,12 @@ func (p *Periodic) Close() {
 func New(ctx context.Context, config *Config, nodeInfo *api.NodeInfo, apiClient *api.Client) *Builder {
 	ctx, cancel := context.WithCancel(ctx)
 	return &Builder{
-		config:    config,
-		nodeInfo:  nodeInfo,
-		apiClient: apiClient,
-		ctx:       ctx,
-		cancel:    cancel,
+		config:       config,
+		nodeInfo:     nodeInfo,
+		apiClient:    apiClient,
+		ctx:          ctx,
+		cancel:       cancel,
+		trafficStats: NewTrafficStats(),
 	}
 }
 
@@ -115,9 +120,18 @@ func (b *Builder) Start() error {
 		Interval: b.config.FetchUsersInterval,
 		Execute:  b.fetchUsersMonitor,
 	}
+	b.reportTrafficsMonitorPeriodic = &Periodic{
+		Interval: b.config.ReportTrafficsInterval,
+		Execute:  b.reportTrafficsMonitor,
+	}
 
 	log.Infoln("Start monitoring for user acquisition")
 	if err := b.fetchUsersMonitorPeriodic.Start(); err != nil {
+		return err
+	}
+
+	log.Infoln("Start traffic reporting monitoring")
+	if err := b.reportTrafficsMonitorPeriodic.Start(); err != nil {
 		return err
 	}
 
@@ -153,7 +167,9 @@ func (b *Builder) startTuicInternal() error {
 		return fmt.Errorf("failed to listen UDP: %w", err)
 	}
 
-	handler := &Handler{}
+	handler := &Handler{
+		trafficStats: b.trafficStats,
+	}
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
@@ -191,6 +207,9 @@ func (b *Builder) Close() error {
 	if b.fetchUsersMonitorPeriodic != nil {
 		b.fetchUsersMonitorPeriodic.Close()
 	}
+	if b.reportTrafficsMonitorPeriodic != nil {
+		b.reportTrafficsMonitorPeriodic.Close()
+	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.service != nil {
@@ -210,6 +229,36 @@ func (b *Builder) fetchUsersMonitor() error {
 	defer b.mu.Unlock()
 	b.updateUsers(newUserList)
 	b.userList = newUserList
+	return nil
+}
+
+func (b *Builder) reportTrafficsMonitor() error {
+	stats := b.trafficStats.GetAndReset()
+	if len(stats) == 0 {
+		return nil
+	}
+
+	userTraffic := make([]api.UserTraffic, 0, len(stats))
+	for uidStr, s := range stats {
+		var uid int
+		fmt.Sscanf(uidStr, "%d", &uid)
+		if uid > 0 && (s.Tx > 0 || s.Rx > 0) {
+			userTraffic = append(userTraffic, api.UserTraffic{
+				UID:      uid,
+				Upload:   int64(s.Tx),
+				Download: int64(s.Rx),
+			})
+		}
+	}
+
+	if len(userTraffic) > 0 {
+		log.Infof("%d user traffic needs to be reported", len(userTraffic))
+		err := b.apiClient.ReportUserTraffic(b.ctx, userTraffic)
+		if err != nil {
+			log.Errorln("server error when submitting traffic", err)
+			return nil
+		}
+	}
 	return nil
 }
 
@@ -272,6 +321,7 @@ func (c *MyTLSConfig) Server(conn net.Conn) (aTLS.Conn, error) {
 
 // Handler implements ServiceHandler
 type Handler struct {
+	trafficStats *TrafficStats
 }
 
 func (h *Handler) NewConnectionEx(ctx context.Context, conn net.Conn, source M.Socksaddr, destination M.Socksaddr, onClose N.CloseHandlerFunc) {
@@ -284,6 +334,18 @@ func (h *Handler) NewConnectionEx(ctx context.Context, conn net.Conn, source M.S
 		conn.Close()
 		return
 	}
+
+	// Wrap connection for traffic logging
+	uid, ok := auth.UserFromContext[int](ctx)
+	if ok && h.trafficStats != nil {
+		conn = &TrafficConn{
+			Conn: conn,
+			log: func(tx, rx uint64) {
+				h.trafficStats.LogTraffic(fmt.Sprintf("%d", uid), tx, rx)
+			},
+		}
+	}
+
 	// Copy
 	go func() {
 		io.Copy(conn, outConn)
@@ -299,4 +361,62 @@ func (h *Handler) NewConnectionEx(ctx context.Context, conn net.Conn, source M.S
 
 func (h *Handler) NewPacketConnectionEx(ctx context.Context, conn N.PacketConn, source M.Socksaddr, destination M.Socksaddr, onClose N.CloseHandlerFunc) {
 	conn.Close()
+}
+
+// TrafficStats and TrafficConn
+
+type TrafficStats struct {
+	stats map[string]*ConnStats // auth_id (uid as string) -> stats
+	mu    sync.Mutex
+}
+
+type ConnStats struct {
+	Tx uint64
+	Rx uint64
+}
+
+func NewTrafficStats() *TrafficStats {
+	return &TrafficStats{
+		stats: make(map[string]*ConnStats),
+	}
+}
+
+func (s *TrafficStats) LogTraffic(id string, tx, rx uint64) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.stats[id]; !ok {
+		s.stats[id] = &ConnStats{}
+	}
+	s.stats[id].Tx += tx
+	s.stats[id].Rx += rx
+	return true
+}
+
+func (s *TrafficStats) GetAndReset() map[string]*ConnStats {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r := s.stats
+	s.stats = make(map[string]*ConnStats)
+	return r
+}
+
+type TrafficConn struct {
+	net.Conn
+	log func(tx, rx uint64)
+}
+
+func (c *TrafficConn) Read(b []byte) (int, error) {
+	n, err := c.Conn.Read(b)
+	if n > 0 {
+		c.log(0, uint64(n))
+	}
+	return n, err
+}
+
+func (c *TrafficConn) Write(b []byte) (int, error) {
+	n, err := c.Conn.Write(b)
+	if n > 0 {
+		c.log(uint64(n), 0)
+	}
+	return n, err
 }
