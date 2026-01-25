@@ -18,8 +18,8 @@ github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sagernet/quic-go v0.52.0-beta.1 h1:hWkojLg64zjV+MJOvJU/kOeWndm3tiEfBLx5foisszs=
 github.com/sagernet/quic-go v0.52.0-beta.1/go.mod h1:OV+V5kEBb8kJS7k29MzDu6oj9GyMc7HA07sE1tedxz4=
-github.com/sagernet/sing v0.7.7 h1:o46FzVZS+wKbBMEkMEdEHoVZxyM9jvfRpKXc7pEgS/c=
-github.com/sagernet/sing v0.7.7/go.mod h1:ARkL0gM13/Iv5VCZmci/NuoOlePoIsW0m7BWfln/Hak=
+github.com/sagernet/sing v0.7.14 h1:5QQRDCUvYNOMyVp3LuK/hYEBAIv0VsbD3x/l9zH467s=
+github.com/sagernet/sing v0.7.14/go.mod h1:ARkL0gM13/Iv5VCZmci/NuoOlePoIsW0m7BWfln/Hak=
 github.com/sagernet/sing-quic v0.5.2 h1:I3vlfRImhr0uLwRS3b3ib70RMG9FcXtOKKUDz3eKRWc=
 github.com/sagernet/sing-quic v0.5.2/go.mod h1:evP1e++ZG8TJHVV5HudXV4vWeYzGfCdF4HwSJZcdqkI=
 github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w=
