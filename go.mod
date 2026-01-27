@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/GoAsyncFunc/uniproxy v0.0.6
-	github.com/sagernet/sing v0.7.14
+	github.com/sagernet/sing v0.7.15
 	github.com/sagernet/sing-quic v0.5.2
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli/v2 v2.27.7
