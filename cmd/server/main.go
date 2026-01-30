@@ -15,6 +15,7 @@ import (
 
 	"github.com/GoAsyncFunc/server-tuic/internal/pkg/service"
 	api "github.com/GoAsyncFunc/uniproxy/pkg"
+	_ "github.com/sagernet/sing-box"
 )
 
 const (
