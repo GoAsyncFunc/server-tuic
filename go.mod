@@ -4,8 +4,8 @@ go 1.25.6
 
 require (
 	github.com/GoAsyncFunc/uniproxy v0.0.6
-	github.com/sagernet/sing v0.7.16
-	github.com/sagernet/sing-box v1.12.17
+	github.com/sagernet/sing v0.7.18
+	github.com/sagernet/sing-box v1.12.20
 	github.com/sagernet/sing-quic v0.5.2
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli/v2 v2.27.7
@@ -45,7 +45,7 @@ require (
 	github.com/sagernet/nftables v0.3.0-beta.4 // indirect
 	github.com/sagernet/quic-go v0.52.0-sing-box-mod.3 // indirect
 	github.com/sagernet/sing-mux v0.3.4 // indirect
-	github.com/sagernet/sing-tun v0.7.3 // indirect
+	github.com/sagernet/sing-tun v0.7.11 // indirect
 	github.com/sagernet/sing-vmess v0.2.7 // indirect
 	github.com/sagernet/smux v1.5.50-sing-box-mod.1 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
