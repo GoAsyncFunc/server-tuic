@@ -3,7 +3,7 @@ module github.com/GoAsyncFunc/server-tuic
 go 1.25.6
 
 require (
-	github.com/GoAsyncFunc/uniproxy v0.0.6
+	github.com/GoAsyncFunc/uniproxy v0.0.8
 	github.com/sagernet/sing v0.7.16
 	github.com/sagernet/sing-box v1.12.17
 	github.com/sagernet/sing-quic v0.5.2
