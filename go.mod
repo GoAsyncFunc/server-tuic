@@ -3,7 +3,7 @@ module github.com/GoAsyncFunc/server-tuic
 go 1.25.6
 
 require (
-	github.com/GoAsyncFunc/uniproxy v0.0.6
+	github.com/GoAsyncFunc/uniproxy v0.0.9
 	github.com/sagernet/sing v0.7.16
 	github.com/sagernet/sing-box v1.12.17
 	github.com/sagernet/sing-quic v0.5.2
@@ -19,7 +19,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-chi/chi/v5 v5.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-resty/resty/v2 v2.17.1 // indirect
+	github.com/go-resty/resty/v2 v2.17.2 // indirect
 	github.com/gofrs/uuid/v5 v5.3.2 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
